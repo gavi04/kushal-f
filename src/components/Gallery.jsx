@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { ChevronLeft, ChevronRight, Play, Pause, ExternalLink } from "lucide-react"
 import axios from "axios"
 import Image from "next/image"
+import { buildImageUrl } from "../lib/buildImageUrl"
 
 const ImageSlideshow = () => {
   const [media, setMedia] = useState([])
@@ -23,7 +24,8 @@ const ImageSlideshow = () => {
         const mediaFiles = response.data.data.flatMap((gallery) => {
           if (gallery.gallery_img) {
             return gallery.gallery_img.map((item) => ({
-              url: `${process.env.NEXT_PUBLIC_STRAPI}${item.url}`,
+              // store the raw path from Strapi; build full URL at render time
+              url: item.url,
               type: item.mime.startsWith("image") ? "image" : "video",
               videoUrl: item.mime === "video/mp4" ? item.url : null,
               formats: item.formats,
@@ -154,57 +156,64 @@ const ImageSlideshow = () => {
                 transform: `translateX(-${currentIndex * (100 / imagesPerView)}%)`,
               }}
             >
-              {media.map((item, index) => (
-                <div key={index} className="flex-shrink-0 p-2" style={{ width: `${100 / imagesPerView}%` }}>
-                  <div className="relative h-[300px] md:h-[350px] lg:h-[400px] rounded-lg overflow-hidden group">
-                    {item.type === "image" ? (
-                      <>
-                        <Image
-                          src={item.url || "/placeholder.svg"}
-                          alt={`Gallery image ${index + 1}`}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          width={600}
-                          height={400}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      </>
-                    ) : item.type === "youtube" ? (
-                      <div className="relative w-full h-full">
+              {media.map((item, index) => {
+                const imgSrc = buildImageUrl(
+                  process.env.NEXT_PUBLIC_STRAPI_API_URL || process.env.NEXT_PUBLIC_STRAPI_API || process.env.NEXT_PUBLIC_STRAPI,
+                  item.url
+                )
+
+                return (
+                  <div key={index} className="flex-shrink-0 p-2" style={{ width: `${100 / imagesPerView}%` }}>
+                    <div className="relative h-[300px] md:h-[350px] lg:h-[400px] rounded-lg overflow-hidden group">
+                      {item.type === "image" ? (
+                        <>
+                          <Image
+                            src={imgSrc}
+                            alt={`Gallery image ${index + 1}`}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            width={600}
+                            height={400}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        </>
+                      ) : item.type === "youtube" ? (
+                        <div className="relative w-full h-full">
+                          <iframe
+                            width="100%"
+                            height="100%"
+                            src={`https://www.youtube.com/embed/${extractYouTubeId(item.videoUrl)}?rel=0`}
+                            title={`YouTube video ${index + 1}`}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="rounded-lg"
+                          ></iframe>
+                          <a
+                            href={item.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute bottom-3 right-3 p-2 bg-white/80 rounded-full shadow-md hover:bg-white transition z-10"
+                            aria-label="Open in YouTube"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                        </div>
+                      ) : item.videoUrl ? (
                         <iframe
                           width="100%"
                           height="100%"
-                          src={`https://www.youtube.com/embed/${extractYouTubeId(item.videoUrl)}?rel=0`}
-                          title={`YouTube video ${index + 1}`}
+                          src={`https://www.youtube.com/embed/${extractYouTubeId(item.videoUrl)}`}
+                          title={`Video ${index + 1}`}
                           frameBorder="0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                           className="rounded-lg"
                         ></iframe>
-                        <a
-                          href={item.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="absolute bottom-3 right-3 p-2 bg-white/80 rounded-full shadow-md hover:bg-white transition z-10"
-                          aria-label="Open in YouTube"
-                        >
-                          <ExternalLink size={16} />
-                        </a>
-                      </div>
-                    ) : item.videoUrl ? (
-                      <iframe
-                        width="100%"
-                        height="100%"
-                        src={`https://www.youtube.com/embed/${extractYouTubeId(item.videoUrl)}`}
-                        title={`Video ${index + 1}`}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="rounded-lg"
-                      ></iframe>
-                    ) : null}
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <button

@@ -10,11 +10,13 @@ import {
   Star,
   Truck,
 } from "lucide-react";
+import Image from "next/image";
 
 import ReviewForm from "./ReviewForm";
 import { useCart } from "@/context/cart-context";
 import useCartIndividual from "../hooks/useAddCart";
 import useFetchReviews from "../hooks/useFetchReviews";
+import { buildImageUrl } from "../lib/buildImageUrl";
 
 const ProductPage = ({ product }) => {
   const {
@@ -123,13 +125,15 @@ const ProductPage = ({ product }) => {
 
               {images.length > 0 ? (
                 <>
-                  <img
+                  <Image
                     src={
                       getImageUrl(images[selectedImageIndex]) ||
                       "/placeholder.svg"
                     }
                     alt={images[selectedImageIndex]?.name || "Product image"}
                     className="w-full h-full object-contain p-4"
+                    width={500}
+                    height={500}
                   />
 
                   {images.length > 1 && (
@@ -169,10 +173,12 @@ const ProductPage = ({ product }) => {
                         : "border-gray-200"
                     }`}
                   >
-                    <img
+                    <Image
                       src={getImageUrl(img) || "/placeholder.svg"}
                       alt={img.name || `Thumbnail ${idx + 1}`}
                       className="h-16 w-16 object-cover"
+                      width={100}
+                      height={100}
                     />
                   </button>
                 ))}
